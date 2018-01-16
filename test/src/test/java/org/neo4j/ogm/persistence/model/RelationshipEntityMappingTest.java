@@ -16,6 +16,7 @@ package org.neo4j.ogm.persistence.model;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -66,6 +67,19 @@ public class RelationshipEntityMappingTest extends MultiDriverTestClass {
         GraphTestUtils.assertSameGraph(getGraphDatabaseService(), "MERGE (m:Movie {uuid:\"" + hp.getUuid().toString()
             + "\"}) SET m.title = 'Goblet of Fire', m.year = 2005 MERGE (a:Actor {uuid:\"" + daniel.getUuid().toString()
             + "\"}) SET a.name='Daniel Radcliffe' create (a)-[:ACTS_IN {role:'Harry Potter'}]->(m)");
+    }
+
+    @Test
+    public void loadRelationshipEntityWithUnlimitedDepth() {
+        Movie hp = new Movie("Goblet of Fire", 2005);
+
+        Actor daniel = new Actor("Daniel Radcliffe");
+        daniel.playedIn(hp, "Harry Potter");
+        session.save(daniel);
+
+        session.clear();
+
+        Collection<Role> roles = session.loadAll(Role.class, -1);
     }
 
     @Test
