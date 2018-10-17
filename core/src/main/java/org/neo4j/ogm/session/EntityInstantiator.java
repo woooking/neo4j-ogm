@@ -24,6 +24,10 @@ import java.util.Map;
  * Interface to be implemented to override entity instances creation.
  * This is mainly designed for SDN, Spring data commons having some infrastructure code to do fancy
  * object instantiation using persistence constructors and ASM low level bytecode generation.
+ *
+ * @author Nicolas Mervaillie
+ * @author Michael J. Simons
+ * @since 3.1
  */
 public interface EntityInstantiator {
 
@@ -36,4 +40,16 @@ public interface EntityInstantiator {
      * @return The created instance.
      */
     <T> T createInstance(Class<T> clazz, Map<String, Object> propertyValues);
+
+    /**
+     * This methods shall return true if an instance of a class instantiated by this instantiator needs
+     * further population after instantiation.
+     *
+     * @param clazz The class that is checked whether it requires further population or not after being instantiated
+     * @return true by default
+     * @since 3.1.5
+     */
+    default <T> boolean needsFurtherPopulation(Class<T> clazz, T instance) {
+        return true;
+    }
 }

@@ -56,7 +56,7 @@ public class EntityFactory {
     /**
      * Constructs a new {@link EntityFactory} driven by the specified {@link MetaData}.
      *
-     * @param metadata The mapping {@link MetaData}
+     * @param metadata           The mapping {@link MetaData}
      * @param entityInstantiator The instantiation mechanism to be used.
      */
     public EntityFactory(MetaData metadata, EntityInstantiator entityInstantiator) {
@@ -86,13 +86,26 @@ public class EntityFactory {
     /**
      * Constructs a new instance of the specified class using the same logic as the graph model factory methods.
      *
-     * @param <T>    The class of object to return
-     * @param clarse The class to instantiate
+     * @param <T>   The class of object to return
+     * @param clazz The class to instantiate
      * @return A new instance of the specified {@link Class}
      * @throws MappingException if it's not possible to instantiate the given class for any reason
      */
-    public <T> T newObject(Class<T> clarse, Map<String, Object> map) {
-        return instantiate(clarse, map);
+    public <T> T newObject(Class<T> clazz, Map<String, Object> map) {
+        return instantiate(clazz, map);
+    }
+
+    /**
+     * Check whether an instance of a given class created by this factory needs further population.
+     *
+     * @param clazz    The class that is checked whether it requires further population or not after being created
+     * @param instance The concrete instance
+     * @param <T>      Type of the instance
+     * @return true if further population needed, false otherwise
+     * @since 3.1.5
+     */
+    public <T> boolean needsFurtherPopulation(Class<T> clazz, T instance) {
+        return entityInstantiator.needsFurtherPopulation(clazz, instance);
     }
 
     private <T> T instantiateObjectFromTaxa(String[] taxa, Map<String, Object> propertyValues) {

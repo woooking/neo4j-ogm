@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.neo4j.ogm.exception.core.MappingException;
 import org.neo4j.ogm.metadata.ClassInfo;
@@ -42,10 +41,11 @@ import org.slf4j.LoggerFactory;
  *
  * @author Adam George
  * @author Luanne Misquitta
+ * @author Michael J. Simons
  */
 public class SingleUseEntityMapper {
 
-    private static final Logger logger = LoggerFactory.getLogger(SingleUseEntityMapper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SingleUseEntityMapper.class);
 
     private final EntityFactory entityFactory;
     private final MetaData metadata;
@@ -64,8 +64,8 @@ public class SingleUseEntityMapper {
     /**
      * Constructs a new {@link SingleUseEntityMapper} based on the given mapping {@link MetaData}.
      *
-     * @param mappingMetaData The {@link MetaData} to use for performing mappings
-     * @param entityInstantiator   The entity factory to use.
+     * @param mappingMetaData    The {@link MetaData} to use for performing mappings
+     * @param entityInstantiator The entity factory to use.
      */
     public SingleUseEntityMapper(MetaData mappingMetaData, EntityInstantiator entityInstantiator) {
         this.metadata = mappingMetaData;
@@ -82,27 +82,30 @@ public class SingleUseEntityMapper {
      * @return A new instance of {@code T} populated with the data in the specified row model
      */
     public <T> T map(Class<T> type, String[] columnNames, RowModel rowModel) {
+
         Map<String, Object> properties = new HashMap<>();
         for (int i = 0; i < rowModel.getValues().length; i++) {
             properties.put(columnNames[i], rowModel.getValues()[i]);
         }
 
         T entity = this.entityFactory.newObject(type, properties);
-        setPropertiesOnEntity(entity, properties);
-        return entity;
+        return setPropertiesOnEntity(entity, properties);
     }
 
     public <T> T map(Class<T> type, Map<String, Object> row) {
         T entity = this.entityFactory.newObject(type, row);
-        setPropertiesOnEntity(entity, row);
-        return entity;
+        return setPropertiesOnEntity(entity, row);
     }
 
-    private void setPropertiesOnEntity(Object entity, Map<String, Object> propertyMap) {
-        ClassInfo classInfo = resolveClassInfoFor(entity.getClass());
-        for (Entry<String, Object> propertyMapEntry : propertyMap.entrySet()) {
-            writeProperty(classInfo, entity, propertyMapEntry);
+    private <T> T setPropertiesOnEntity(T entity, Map<String, Object> propertyMap) {
+
+        Class entityClass = entity.getClass();
+        if (this.entityFactory.needsFurtherPopulation(entityClass, entity)) {
+            ClassInfo entityClassInfo = resolveClassInfoFor(entity.getClass());
+            propertyMap.entrySet()
+                .forEach(entry -> writeProperty(entityClassInfo, entity, entry));
         }
+        return entity;
     }
 
     private ClassInfo resolveClassInfoFor(Class<?> type) {
@@ -110,44 +113,37 @@ public class SingleUseEntityMapper {
         if (classInfo != null) {
             return classInfo;
         }
-        throw new MappingException("Error mapping to ad-hoc " + type +
-            ".  At present, only @Result types that are discovered by the domain entity package scanning can be mapped.");
+        throw new MappingException("Cannot map query result to a class not known by Neo4j-OGM.");
     }
 
-    // TODO: the following is all pretty much identical to GraphEntityMapper so should probably be refactored
     private void writeProperty(ClassInfo classInfo, Object instance, Map.Entry<String, Object> property) {
 
-        FieldInfo writer = classInfo.getFieldInfo(property.getKey());
+        String propertyName = property.getKey();
+        FieldInfo targetFieldInfo = classInfo.getFieldInfo(propertyName);
 
-        if (writer == null) {
-            FieldInfo fieldInfo = classInfo.relationshipFieldByName(property.getKey());
-            if (fieldInfo != null) {
-                writer = fieldInfo;
-            }
+        if (targetFieldInfo == null) {
+            targetFieldInfo = classInfo.relationshipFieldByName(propertyName);
         }
 
-        if (writer == null && property.getKey().equals(
-            "id")) { //When mapping query results to objects that are not domain entities, there's no concept of a GraphID
-            FieldInfo idField = classInfo.identityField();
-            if (idField != null) {
-                writer = idField;
-            }
+        // When mapping query results to objects that are not domain entities, there's no concept of a GraphID
+        if (targetFieldInfo == null && "id".equals(propertyName)) {
+            targetFieldInfo = classInfo.identityField();
         }
 
-        if (writer != null) {
+        if (targetFieldInfo == null) {
+            LOGGER.debug("Unable to find property: {} on class: {} for writing", propertyName, classInfo.name());
+        } else {
             Object value = property.getValue();
             if (value != null && value.getClass().isArray()) {
                 value = Arrays.asList((Object[]) value);
             }
-            if (writer.type().isArray() || Iterable.class.isAssignableFrom(writer.type())) {
-                Class elementType = underlyingElementType(classInfo, property.getKey());
-                value = writer.type().isArray()
-                    ? EntityAccessManager.merge(writer.type(), value, new Object[] {}, elementType)
-                    : EntityAccessManager.merge(writer.type(), value, Collections.EMPTY_LIST, elementType);
+            if (targetFieldInfo.type().isArray() || Iterable.class.isAssignableFrom(targetFieldInfo.type())) {
+                Class elementType = underlyingElementType(classInfo, propertyName);
+                value = targetFieldInfo.type().isArray()
+                    ? EntityAccessManager.merge(targetFieldInfo.type(), value, new Object[] {}, elementType)
+                    : EntityAccessManager.merge(targetFieldInfo.type(), value, Collections.EMPTY_LIST, elementType);
             }
-            writer.write(instance, value);
-        } else {
-            logger.warn("Unable to find property: {} on class: {} for writing", property.getKey(), classInfo.name());
+            targetFieldInfo.write(instance, value);
         }
     }
 
