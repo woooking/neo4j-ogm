@@ -19,6 +19,7 @@
 package org.neo4j.ogm.session;
 
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Interface to be implemented to override entity instances creation.
@@ -46,10 +47,20 @@ public interface EntityInstantiator {
      * further population after instantiation.
      *
      * @param clazz The class that is checked whether it requires further population or not after being instantiated
+     * @param <T>
      * @return true by default
-     * @since 3.1.5
+     * @since 3.2
      */
-    default <T> boolean needsFurtherPopulation(Class<T> clazz, T instance) {
+    default <T> boolean needsFurtherPopulation(Class<T> clazz, @SuppressWarnings("unused") T instance) {
         return true;
+    }
+
+    /**
+     * @param <T>
+     * @return The write to use if a new entity needs further population
+     * @since 3.2
+     */
+    default <T> Function<T, PropertyWriter<T>> getPropertyWriterSupplier() {
+        return initialInstance ->  new DefaultPropertyWriter<T>(initialInstance);
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.ogm.metadata.reflect;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.ogm.exception.core.BaseClassNotFoundException;
 import org.neo4j.ogm.exception.core.MappingException;
@@ -29,6 +30,7 @@ import org.neo4j.ogm.metadata.MetaData;
 import org.neo4j.ogm.model.Node;
 import org.neo4j.ogm.model.Property;
 import org.neo4j.ogm.session.EntityInstantiator;
+import org.neo4j.ogm.session.PropertyWriter;
 
 /**
  * A metadata-driven factory class for creating node and relationship entities.
@@ -95,17 +97,20 @@ public class EntityFactory {
         return instantiate(clazz, map);
     }
 
-    /**
-     * Check whether an instance of a given class created by this factory needs further population.
-     *
-     * @param clazz    The class that is checked whether it requires further population or not after being created
-     * @param instance The concrete instance
-     * @param <T>      Type of the instance
-     * @return true if further population needed, false otherwise
-     * @since 3.1.5
+    /*
+     * (non-Javadoc)
+     * @see EntityInstantiator#needsFurtherPopulation(Class, Object)
      */
     public <T> boolean needsFurtherPopulation(Class<T> clazz, T instance) {
         return entityInstantiator.needsFurtherPopulation(clazz, instance);
+    }
+
+    /*
+     * (non-Javadoc)
+     * @see EntityInstantiator#getPropertyWriterSupplier()
+     */
+    public <T> Function<T, PropertyWriter<T>> getPropertyWriterSupplier() {
+        return entityInstantiator.getPropertyWriterSupplier();
     }
 
     private <T> T instantiateObjectFromTaxa(String[] taxa, Map<String, Object> propertyValues) {

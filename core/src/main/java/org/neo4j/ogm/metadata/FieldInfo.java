@@ -18,6 +18,7 @@
  */
 package org.neo4j.ogm.metadata;
 
+import static org.neo4j.ogm.metadata.DefaultFieldConversions.*;
 import static org.neo4j.ogm.metadata.reflect.GenericUtils.*;
 
 import java.lang.reflect.Field;
@@ -100,7 +101,8 @@ public class FieldInfo {
      *                                if that's not appropriate
      * @param annotations             The {@link ObjectAnnotations} applied to the field
      */
-    public FieldInfo(ClassInfo classInfo, Field field, String typeParameterDescriptor, ObjectAnnotations annotations, boolean isSupportedNativeType) {
+    public FieldInfo(ClassInfo classInfo, Field field, String typeParameterDescriptor, ObjectAnnotations annotations,
+        boolean isSupportedNativeType) {
         this.containingClassInfo = classInfo;
         this.field = field;
         this.fieldType = isGenericField(field) ? findFieldType(field, classInfo.getUnderlyingClass()) : field.getType();
@@ -374,7 +376,7 @@ public class FieldInfo {
 
     public void write(Object instance, Object value) {
 
-        write(field, instance, FieldTransformations.applyFieldConversionOrCoerceIfNecessary(this, value));
+        writeDirect(instance, applyFieldConversionOrCoerceIfNecessary(this).apply(value));
     }
 
     /**
@@ -485,7 +487,6 @@ public class FieldInfo {
             ((GeneratedValue) this.getAnnotations().get(GeneratedValue.class).getAnnotation())
                 .strategy().equals(InternalIdStrategy.class);
     }
-
 
     private static boolean doesDescriptorMatchType(String descriptor, Class<?> type) {
 
