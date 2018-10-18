@@ -21,16 +21,20 @@ package org.neo4j.ogm.context;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 import org.neo4j.ogm.exception.core.MappingException;
 import org.neo4j.ogm.metadata.ClassInfo;
 import org.neo4j.ogm.metadata.FieldInfo;
+import org.neo4j.ogm.metadata.FieldTransformations;
 import org.neo4j.ogm.metadata.MetaData;
 import org.neo4j.ogm.metadata.reflect.EntityAccessManager;
 import org.neo4j.ogm.metadata.reflect.EntityFactory;
 import org.neo4j.ogm.model.RowModel;
 import org.neo4j.ogm.session.EntityInstantiator;
+import org.neo4j.ogm.session.Utils;
 import org.neo4j.ogm.utils.ClassUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,21 +93,22 @@ public class SingleUseEntityMapper {
         }
 
         T entity = this.entityFactory.newObject(type, properties);
-        return setPropertiesOnEntity(entity, properties);
+        return populatePropertiesOfEntity(entity, properties);
     }
 
     public <T> T map(Class<T> type, Map<String, Object> row) {
         T entity = this.entityFactory.newObject(type, row);
-        return setPropertiesOnEntity(entity, row);
+        return populatePropertiesOfEntity(entity, row);
     }
 
-    private <T> T setPropertiesOnEntity(T entity, Map<String, Object> propertyMap) {
+    private <T> T populatePropertiesOfEntity(T entity, Map<String, Object> propertyMap) {
 
         Class entityClass = entity.getClass();
         if (this.entityFactory.needsFurtherPopulation(entityClass, entity)) {
             ClassInfo entityClassInfo = resolveClassInfoFor(entity.getClass());
+
             propertyMap.entrySet()
-                .forEach(entry -> writeProperty(entityClassInfo, entity, entry));
+                .forEach(entry -> writeProperty(entityClassInfo, entity, entry.getKey(), entry.getValue()));
         }
         return entity;
     }
@@ -116,9 +121,8 @@ public class SingleUseEntityMapper {
         throw new MappingException("Cannot map query result to a class not known by Neo4j-OGM.");
     }
 
-    private void writeProperty(ClassInfo classInfo, Object instance, Map.Entry<String, Object> property) {
+    private void writeProperty(ClassInfo classInfo, Object instance, String propertyName, Object propertyValue) {
 
-        String propertyName = property.getKey();
         FieldInfo targetFieldInfo = classInfo.getFieldInfo(propertyName);
 
         if (targetFieldInfo == null) {
@@ -133,25 +137,8 @@ public class SingleUseEntityMapper {
         if (targetFieldInfo == null) {
             LOGGER.debug("Unable to find property: {} on class: {} for writing", propertyName, classInfo.name());
         } else {
-            Object value = property.getValue();
-            if (value != null && value.getClass().isArray()) {
-                value = Arrays.asList((Object[]) value);
-            }
-            if (targetFieldInfo.type().isArray() || Iterable.class.isAssignableFrom(targetFieldInfo.type())) {
-                Class elementType = underlyingElementType(classInfo, propertyName);
-                value = targetFieldInfo.type().isArray()
-                    ? EntityAccessManager.merge(targetFieldInfo.type(), value, new Object[] {}, elementType)
-                    : EntityAccessManager.merge(targetFieldInfo.type(), value, Collections.EMPTY_LIST, elementType);
-            }
+            Object value = FieldTransformations.mergeAndCoercePossibleArray(targetFieldInfo, propertyValue);
             targetFieldInfo.write(instance, value);
         }
-    }
-
-    private Class underlyingElementType(ClassInfo classInfo, String propertyName) {
-        FieldInfo fieldInfo = classInfo.propertyField(propertyName);
-        if (fieldInfo != null) {
-            return ClassUtils.getType(fieldInfo.getTypeDescriptor());
-        }
-        return classInfo.getUnderlyingClass();
     }
 }

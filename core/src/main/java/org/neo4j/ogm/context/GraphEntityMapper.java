@@ -30,6 +30,7 @@ import org.neo4j.ogm.annotation.StartNode;
 import org.neo4j.ogm.exception.core.MappingException;
 import org.neo4j.ogm.metadata.ClassInfo;
 import org.neo4j.ogm.metadata.FieldInfo;
+import org.neo4j.ogm.metadata.FieldTransformations;
 import org.neo4j.ogm.metadata.MetaData;
 import org.neo4j.ogm.metadata.MethodInfo;
 import org.neo4j.ogm.metadata.reflect.EntityAccessManager;
@@ -39,8 +40,8 @@ import org.neo4j.ogm.model.GraphModel;
 import org.neo4j.ogm.model.Node;
 import org.neo4j.ogm.model.Property;
 import org.neo4j.ogm.response.Response;
-import org.neo4j.ogm.response.model.PropertyModel;
 import org.neo4j.ogm.session.EntityInstantiator;
+import org.neo4j.ogm.session.Utils;
 import org.neo4j.ogm.typeconversion.CompositeAttributeConverter;
 import org.neo4j.ogm.utils.ClassUtils;
 import org.neo4j.ogm.utils.EntityUtils;
@@ -236,7 +237,7 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
 
                     entity = entityFactory.newObject(clsi.getUnderlyingClass(), allProps);
                     EntityUtils.setIdentity(entity, node.getId(), metadata);
-                    setProperties(node.getPropertyList(), entity);
+                    populatePropertiesOfEntity(entity, node.getPropertyList());
                     setLabels(node, entity);
                     mappingContext.addNodeEntity(entity, node.getId());
                 }
@@ -268,18 +269,20 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
         return compositeValues;
     }
 
-    private void setProperties(List<Property<String, Object>> propertyList, Object instance) {
-        ClassInfo classInfo = metadata.classInfo(instance);
+    private <T> T populatePropertiesOfEntity(T entity, List<Property<String, Object>> propertyList) {
 
-        getCompositeProperties(propertyList, classInfo).forEach( (field, v) -> field.write(instance, v));
+        ClassInfo classInfo = metadata.classInfo(entity);
+        getCompositeProperties(propertyList, classInfo).forEach((field, v) -> field.write(entity, v));
 
-        for (Property<?, ?> property : propertyList) {
-            writeProperty(classInfo, instance, property);
+        for (Property<String, Object> property : propertyList) {
+            writeProperty(classInfo, entity, property.getKey(), property.getValue());
         }
+        return entity;
     }
 
     private void setLabels(Node nodeModel, Object instance) {
         ClassInfo classInfo = metadata.classInfo(instance);
+
         FieldInfo labelFieldInfo = classInfo.labelFieldOrNull();
         if (labelFieldInfo != null) {
             Collection<String> staticLabels = classInfo.staticLabels();
@@ -289,32 +292,19 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
                     dynamicLabels.add(label);
                 }
             }
-            writeProperty(classInfo, instance, PropertyModel.with(labelFieldInfo.getName(), dynamicLabels));
+            writeProperty(classInfo, instance, labelFieldInfo.getName(), dynamicLabels);
         }
     }
 
-    private void writeProperty(ClassInfo classInfo, Object instance, Property<?, ?> property) {
+    private void writeProperty(ClassInfo classInfo, Object instance, String propertyName, Object propertyValue) {
 
-        FieldInfo writer = classInfo.getFieldInfo(property.getKey().toString());
+        FieldInfo targetFieldInfo = classInfo.getFieldInfo(propertyName);
 
-        if (writer == null) {
-            logger.debug("Unable to find property: {} on class: {} for writing", property.getKey(), classInfo.name());
+        if (targetFieldInfo == null) {
+            logger.debug("Unable to find property: {} on class: {} for writing", propertyName, classInfo.name());
         } else {
-            Object value = property.getValue();
-            // merge iterable / arrays and co-erce to the correct attribute type
-            if (writer.type().isArray() || Iterable.class.isAssignableFrom(writer.type())) {
-                FieldInfo reader = classInfo.getFieldInfo(property.getKey().toString());
-                if (reader != null) {
-                    Class<?> paramType = writer.type();
-                    Class elementType = underlyingElementType(classInfo, property.getKey().toString());
-                    if (paramType.isArray()) {
-                        value = EntityAccessManager.merge(paramType, value, new Object[] {}, elementType);
-                    } else {
-                        value = EntityAccessManager.merge(paramType, value, Collections.emptyList(), elementType);
-                    }
-                }
-            }
-            writer.write(instance, value);
+            Object value = FieldTransformations.mergeAndCoercePossibleArray(targetFieldInfo, propertyValue);
+            targetFieldInfo.write(instance, value);
         }
     }
 
@@ -402,7 +392,7 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
         }
 
         Map<String, Object> allProps = new HashMap<>(toMap(edge.getPropertyList()));
-        getCompositeProperties(edge.getPropertyList(), relationClassInfo).forEach( (k, v) -> {
+        getCompositeProperties(edge.getPropertyList(), relationClassInfo).forEach((k, v) -> {
             allProps.put(k.getName(), v);
         });
         // also add start and end node as valid constructor values
@@ -415,7 +405,7 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
         EntityUtils.setIdentity(relationshipEntity, edge.getId(), metadata);
 
         // REs also have properties
-        setProperties(edge.getPropertyList(), relationshipEntity);
+        populatePropertiesOfEntity(relationshipEntity, edge.getPropertyList());
 
         // register it in the mapping context
         mappingContext.addRelationshipEntity(relationshipEntity, edge.getId());
@@ -674,22 +664,5 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
             }
         }
         return false;
-    }
-
-    private Class underlyingElementType(ClassInfo classInfo, String propertyName) {
-        FieldInfo fieldInfo = fieldInfoForPropertyName(propertyName, classInfo);
-        Class clazz = null;
-        if (fieldInfo != null) {
-            clazz = ClassUtils.getType(fieldInfo.getTypeDescriptor());
-        }
-        return clazz;
-    }
-
-    private FieldInfo fieldInfoForPropertyName(String propertyName, ClassInfo classInfo) {
-        FieldInfo labelField = classInfo.labelFieldOrNull();
-        if (labelField != null && labelField.getName().toLowerCase().equals(propertyName.toLowerCase())) {
-            return labelField;
-        }
-        return classInfo.propertyField(propertyName);
     }
 }

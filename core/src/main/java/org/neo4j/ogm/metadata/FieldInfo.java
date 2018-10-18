@@ -38,11 +38,9 @@ import org.neo4j.ogm.annotation.Relationship;
 import org.neo4j.ogm.annotation.Version;
 import org.neo4j.ogm.exception.core.MappingException;
 import org.neo4j.ogm.id.InternalIdStrategy;
-import org.neo4j.ogm.session.Utils;
 import org.neo4j.ogm.typeconversion.AttributeConverter;
 import org.neo4j.ogm.typeconversion.CompositeAttributeConverter;
 import org.neo4j.ogm.typeconversion.MapCompositeConverter;
-import org.neo4j.ogm.utils.ClassUtils;
 import org.neo4j.ogm.utils.RelationshipUtils;
 
 /**
@@ -376,16 +374,7 @@ public class FieldInfo {
 
     public void write(Object instance, Object value) {
 
-        if (hasPropertyConverter()) {
-            value = getPropertyConverter().toEntityAttribute(value);
-            write(field, instance, value);
-        } else {
-            if (isScalar()) {
-                String descriptor = getTypeDescriptor();
-                value = Utils.coerceTypes(ClassUtils.getType(descriptor), value);
-            }
-            write(field, instance, value);
-        }
+        write(field, instance, FieldTransformations.applyFieldConversionOrCoerceIfNecessary(this, value));
     }
 
     /**
