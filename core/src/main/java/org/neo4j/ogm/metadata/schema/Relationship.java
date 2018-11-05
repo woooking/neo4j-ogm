@@ -46,4 +46,8 @@ public interface Relationship {
      * @return the other node
      */
     Node other(Node node);
+
+    default boolean isSelfReferential() {
+        return start().equals(other(start()));
+    }
 }
