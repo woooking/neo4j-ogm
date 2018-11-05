@@ -22,6 +22,7 @@ import org.neo4j.ogm.metadata.schema.Schema;
 
 /**
  * @author Frantisek Hartman
+ * @author Michael J. Simons
  */
 public class SchemaNodeLoadClauseBuilderTest {
 
@@ -74,8 +75,22 @@ public class SchemaNodeLoadClauseBuilderTest {
         assertThat(query).isEqualTo(" RETURN n,[ [ (n)-[r_s1:`SIMILAR_TO`]->(r1:`Restaurant`) | [ r_s1, r1 ] ] ]");
     }
 
+    @Test
+    public void schemaWithBackReferenceShouldTerminate() throws Exception {
+        SchemaNodeLoadClauseBuilder queryBuilder = createLoadClauseBuilderForMusicScheme();
+
+        String query = queryBuilder.build("n", "Band", -1);
+        assertThat(query).isEqualTo(" MATCH p0=(n)-[:`ACTIVE_SINCE`|:`FOUNDED_IN`|:`HAS_LINK_TO`|:`HAS_MEMBER`*0..1]-(n1) MATCH p1=(n1)-[:`BORN_IN`|:`HAS_LINK_TO`|:`MEMBER_OF`|:`PART_OF`*0..1]-(n2) RETURN n, collect(p0)+collect(p1)");
+    }
+
     private SchemaNodeLoadClauseBuilder createQueryBuilder() {
         DomainInfo domainInfo = DomainInfo.create("org.neo4j.ogm.metadata.schema.simple");
+        Schema schema = new DomainInfoSchemaBuilder(domainInfo).build();
+        return new SchemaNodeLoadClauseBuilder(schema);
+    }
+
+    private SchemaNodeLoadClauseBuilder createLoadClauseBuilderForMusicScheme() {
+        DomainInfo domainInfo = DomainInfo.create("org.neo4j.ogm.metadata.schema.music");
         Schema schema = new DomainInfoSchemaBuilder(domainInfo).build();
         return new SchemaNodeLoadClauseBuilder(schema);
     }
