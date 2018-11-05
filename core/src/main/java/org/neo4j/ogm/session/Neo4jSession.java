@@ -702,9 +702,6 @@ public class Neo4jSession implements Session {
     }
 
     private LoadClauseBuilder loadNodeClauseBuilder(int depth) {
-        if (depth < 0) {
-            return new PathNodeLoadClauseBuilder();
-        }
 
         switch (loadStrategy) {
             case PATH_LOAD_STRATEGY:
