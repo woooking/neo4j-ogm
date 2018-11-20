@@ -280,7 +280,7 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
 
     private <T> T populatePropertiesOfEntity(T entity, List<Property<String, Object>> propertyList) {
 
-        T pupulatedEntity = entity;
+        T populatedEntity = entity;
         Class entityClass = entity.getClass();
         if (this.entityFactory.needsFurtherPopulation(entityClass, entity)) {
 
@@ -291,16 +291,16 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
 
             // Write the composite properties
             Map<String, Object> compositeProperties = getCompositeProperties(propertyList, entityClassInfo);
-            pupulatedEntity = entityPopulator.populate(entity)
+            populatedEntity = entityPopulator.populate(entity)
                 .using(targetFieldInfo -> applyFieldConversionOrCoerceIfNecessary(targetFieldInfo))
                 .with(compositeProperties);
 
             // Write all the rest.
-            pupulatedEntity = entityPopulator.populate(pupulatedEntity)
+            populatedEntity = entityPopulator.populate(populatedEntity)
                 .using(GraphEntityMapper::applicableFieldTransformations)
                 .with(propertyList);
         }
-        return pupulatedEntity;
+        return populatedEntity;
     }
 
     private void setLabels(Node nodeModel, Object instance) {
