@@ -30,7 +30,6 @@ public interface PropertyWriter<T> {
      * Shall write {@code value} to the property named {@code propertyName} of the entity {@code instance}. If the
      * instance is recreated during the process, return the new instance.
      *
-     * @param instance       The entity to write to
      * @param propertyName   The name of the property
      * @param targetProperty The field describing the property
      * @param value          The new value to write

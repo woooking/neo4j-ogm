@@ -30,8 +30,15 @@ import org.slf4j.LoggerFactory;
  * from the graph-to-entity-mapper in charge and asking the {@link org.neo4j.ogm.session.EntityInstantiator} for a
  * {@link PropertyWriter} as that may depends on how the entity has been initialized in the first place.
  * <br>
- * After populating all properties, it's paramount to use the {@link #getPopulatedEntity() populated entity} from there
- * on as the instance may has changed in the process.
+ * The actual population of the entity return the populated entity. The idiom looks like this:
+ * <pre>
+ *      EntityPopulator&lt;T&gt; entityPopulator = new EntityPopulator&lt;&gt;(targetFieldLookup(entityClassInfo), propertyWriterSupplier);
+ *      Map&lt;String, Object&gt; compositeProperties = new HashMap&lt;&gt;
+ *      populatedEntity = entityPopulator.populate(entity)
+ *                 .using(targetFieldInfo -&gt; applyFieldConversionOrCoerceIfNecessary(targetFieldInfo))
+ *                 .with(compositeProperties);
+ * </pre>
+ * It's safe to reuse the populator.
  *
  * @param <T> Type of the entity to populate
  * @author Michael J. Simons
