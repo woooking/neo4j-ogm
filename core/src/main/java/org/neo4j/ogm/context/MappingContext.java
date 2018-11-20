@@ -168,31 +168,53 @@ public class MappingContext {
      */
     void removeNodeEntity(Object entity, boolean deregisterDependentRelationshipEntity) {
 
-        Long id = nativeId(entity);
+        Long nativeId = nativeId(entity);
 
-        nodeEntityRegister.remove(id);
-        final ClassInfo classInfo = metaData.classInfo(entity);
-        final Object primaryIndexValue = classInfo.readPrimaryIndexValueOf(entity);
-        if (primaryIndexValue != null) {
-            primaryIndexNodeRegister.remove(new LabelPrimaryId(classInfo, primaryIndexValue));
-        }
+        removeNodeEntityImpl(entity, nativeId);
 
         if (deregisterDependentRelationshipEntity) {
             deregisterDependentRelationshipEntity(entity);
         }
     }
 
-    public void replaceNodeEntity(Object entity, Long identity) {
+    /**
+     * This is an improved version of calling
+     * <pre>
+     *     mappingContext.removeNodeEntity(instance, false);
+     *     mappingContext.addNodeEntity(instance);
+     * </pre>
+     * @param entity
+     * @param nativeId
+     */
+    void updateNodeEntity(Object entity, Long nativeId) {
+
+        removeNodeEntityImpl(entity, nativeId);
+        addNodeEntity(entity, nativeId);
+    }
+
+
+    private void removeNodeEntityImpl(Object entity, Long nativeId) {
+
+        nodeEntityRegister.remove(nativeId);
+
+        final ClassInfo classInfo = metaData.classInfo(entity);
+        final Object primaryIndexValue = classInfo.readPrimaryIndexValueOf(entity);
+        if (primaryIndexValue != null) {
+            primaryIndexNodeRegister.remove(new LabelPrimaryId(classInfo, primaryIndexValue));
+        }
+    }
+
+    public void replaceNodeEntity(Object entity, Long nativeId) {
         removeNodeEntity(entity, false);
 
         ClassInfo classInfo = metaData.classInfo(entity);
         if (classInfo.hasPrimaryIndexField()) {
             final Object primaryIndexValue = classInfo.readPrimaryIndexValueOf(entity);
             LabelPrimaryId key = new LabelPrimaryId(classInfo, primaryIndexValue);
-            primaryIdToNativeId.put(key, identity);
+            primaryIdToNativeId.put(key, nativeId);
         }
 
-        addNodeEntity(entity, identity);
+        addNodeEntity(entity, nativeId);
         deregisterDependentRelationshipEntity(entity);
     }
 
