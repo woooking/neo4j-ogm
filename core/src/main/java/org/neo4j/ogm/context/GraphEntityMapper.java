@@ -470,63 +470,35 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
         // first, build the full set of related entities of each type and direction for each source entity in the relationship
         for (Edge edge : oneToManyRelationships) {
 
-            Object instance = mappingContext.getNodeEntity(edge.getStartNode());
-            Object parameter = mappingContext.getNodeEntity(edge.getEndNode());
+            Object startNode = mappingContext.getNodeEntity(edge.getStartNode());
+            Object endNode = mappingContext.getNodeEntity(edge.getEndNode());
 
             // is this a relationship entity we're trying to map?
             Object relationshipEntity = mappingContext.getRelationshipEntity(edge.getId());
             if (relationshipEntity != null) {
                 // establish a relationship between
-                FieldInfo outgoingWriter = findIterableWriter(instance, relationshipEntity, edge.getType(), OUTGOING);
+                FieldInfo outgoingWriter = findIterableWriter(startNode, relationshipEntity, edge.getType(), OUTGOING);
                 if (outgoingWriter != null) {
-                    entityCollector.collectRelationship(edge.getStartNode(),
-                        ClassUtils.getType(outgoingWriter.typeParameterDescriptor()), edge.getType(), OUTGOING,
-                        edge.getId(), edge.getEndNode(), relationshipEntity);
-                    relationshipsToRegister.add(
-                        new MappedRelationship(edge.getStartNode(), edge.getType(), edge.getEndNode(), edge.getId(),
-                            instance.getClass(), ClassUtils.getType(outgoingWriter.typeParameterDescriptor())));
+                    entityCollector.collectRelationship(edge.getStartNode(), ClassUtils.getType(outgoingWriter.typeParameterDescriptor()), edge.getType(), OUTGOING, edge.getId(), edge.getEndNode(), relationshipEntity);
+                    relationshipsToRegister.add(createMappedRelationship(startNode, edge, outgoingWriter));
                 }
-                FieldInfo incomingWriter = findIterableWriter(parameter, relationshipEntity, edge.getType(), INCOMING);
+                FieldInfo incomingWriter = findIterableWriter(endNode, relationshipEntity, edge.getType(), INCOMING);
                 if (incomingWriter != null) {
-                    entityCollector.collectRelationship(edge.getEndNode(),
-                        ClassUtils.getType(incomingWriter.typeParameterDescriptor()), edge.getType(), INCOMING,
-                        edge.getId(), edge.getStartNode(), relationshipEntity);
-                    relationshipsToRegister.add(
-                        new MappedRelationship(edge.getStartNode(), edge.getType(), edge.getEndNode(), edge.getId(),
-                            instance.getClass(), ClassUtils.getType(incomingWriter.typeParameterDescriptor())));
+                    entityCollector.collectRelationship(edge.getEndNode(), ClassUtils.getType(incomingWriter.typeParameterDescriptor()), edge.getType(), INCOMING, edge.getId(), edge.getStartNode(), relationshipEntity);
+                    relationshipsToRegister.add(createMappedRelationship(startNode, edge, incomingWriter));
                 }
             } else {
 
-                // Use getRelationalWriter instead of findIterableWriter
-                // findIterableWriter will return matching iterable even when there is better matching single field
-                FieldInfo outgoingWriter = getRelationalWriter(metadata.classInfo(instance), edge.getType(), OUTGOING,
-                    parameter);
+                FieldInfo outgoingWriter = getRelationalWriter(metadata.classInfo(startNode), edge.getType(), OUTGOING, endNode);
                 if (outgoingWriter != null) {
-                    if (!outgoingWriter.forScalar()) {
-                        entityCollector.collectRelationship(edge.getStartNode(),
-                            ClassUtils.getType(outgoingWriter.typeParameterDescriptor()), edge.getType(), OUTGOING,
-                            edge.getEndNode(), parameter);
-                    } else {
-                        outgoingWriter.write(instance, parameter);
-                    }
-                    MappedRelationship mappedRelationship = new MappedRelationship(edge.getStartNode(), edge.getType(),
-                        edge.getEndNode(), edge.getId(), instance.getClass(),
-                        ClassUtils.getType(outgoingWriter.typeParameterDescriptor()));
-                    relationshipsToRegister.add(mappedRelationship);
+                    writeOrCollect(outgoingWriter, entityCollector, edge.getStartNode(), startNode, edge, OUTGOING, edge.getEndNode(), endNode);
+                    relationshipsToRegister.add(createMappedRelationship(startNode, edge, outgoingWriter));
                 }
-                FieldInfo incomingWriter = getRelationalWriter(metadata.classInfo(parameter), edge.getType(), INCOMING,
-                    instance);
+
+                FieldInfo incomingWriter = getRelationalWriter(metadata.classInfo(endNode), edge.getType(), INCOMING, startNode);
                 if (incomingWriter != null) {
-                    if (!incomingWriter.forScalar()) {
-                        entityCollector.collectRelationship(edge.getEndNode(),
-                            ClassUtils.getType(incomingWriter.typeParameterDescriptor()), edge.getType(), INCOMING,
-                            edge.getStartNode(), instance);
-                    } else {
-                        incomingWriter.write(parameter, instance);
-                    }
-                    relationshipsToRegister.add(
-                        new MappedRelationship(edge.getStartNode(), edge.getType(), edge.getEndNode(), edge.getId(),
-                            instance.getClass(), ClassUtils.getType(incomingWriter.typeParameterDescriptor())));
+                    writeOrCollect(incomingWriter, entityCollector, edge.getEndNode(), endNode, edge, INCOMING, edge.getStartNode(), startNode);
+                    relationshipsToRegister.add(createMappedRelationship(startNode, edge, incomingWriter));
                 }
             }
         }
@@ -539,6 +511,28 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
         for (MappedRelationship mappedRelationship : relationshipsToRegister) {
             mappingContext.addRelationship(mappedRelationship);
         }
+    }
+
+    private static void writeOrCollect(
+        FieldInfo writer, EntityCollector entityCollector,
+        Long idOfNodeA, Object nodeA,
+        Edge edge, String direction,
+        Long idOfNodeB, Object nodeB
+    ) {
+
+        if (writer.forScalar()) {
+            // System.out.println("Scalar Writing " + nodeB + " to " + nodeA);
+            writer.write(nodeA, nodeB);
+        } else {
+            // System.out.println("wrting els " + nodeB);
+            entityCollector.collectRelationship(idOfNodeA, ClassUtils.getType(writer.typeParameterDescriptor()),  edge.getType(), direction, idOfNodeB, nodeB);
+        }
+    }
+
+    private static MappedRelationship createMappedRelationship(Object instance, Edge edge, FieldInfo writer) {
+
+        return new MappedRelationship(edge.getStartNode(), edge.getType(), edge.getEndNode(), edge.getId(),
+            instance.getClass(), ClassUtils.getType(writer.typeParameterDescriptor()));
     }
 
     /**
