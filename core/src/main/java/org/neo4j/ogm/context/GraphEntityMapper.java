@@ -228,32 +228,44 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
         }
     }
 
-    private void mapNodes(GraphModel graphModel, Set<Long> nodeIds) {
+    /**
+     * This goes through all the nodes in the <code>graphModel</code>, checks whether the node has already been
+     * visited (it has been visited when it's in the set of <code>nodeIds</code>) and if not, tries to map it to
+     * an entity if such an entity is not already in the mapping context. <br /><br />
+     * The node's id as is then marked as visited and the entity added - if not not already there - to the
+     * mapping context.
+     *
+     * @param graphModel
+     * @param visitedNodes
+     */
+    private void mapNodes(GraphModel graphModel, Set<Long> visitedNodes) {
 
         for (Node node : graphModel.getNodes()) {
 
             Long nodeId = node.getId();
-            if (nodeIds.contains(nodeId)) {
+            if (visitedNodes.contains(nodeId)) {
+                continue;
+            }
+
+            ClassInfo classInfo = metadata.resolve(node.getLabels());
+            if (classInfo == null) {
+                logger.debug("Could not find a class to map for labels " + Arrays.toString(node.getLabels()));
                 continue;
             }
 
             Object entity = mappingContext.getNodeEntity(nodeId);
             if (entity == null) {
-                ClassInfo clsi = metadata.resolve(node.getLabels());
-                if (clsi == null) {
-                    logger.debug("Could not find a class to map for labels " + Arrays.toString(node.getLabels()));
-                    continue;
-                }
                 Map<String, Object> allProps = new HashMap<>(toMap(node.getPropertyList()));
-                allProps.putAll(getCompositeProperties(node.getPropertyList(), clsi));
+                allProps.putAll(getCompositeProperties(node.getPropertyList(), classInfo));
 
-                entity = entityFactory.newObject(clsi.getUnderlyingClass(), allProps);
+                entity = entityFactory.newObject(classInfo.getUnderlyingClass(), allProps);
                 entity = setIdentity(entity, nodeId);
                 entity = populatePropertiesOfEntity(entity, node.getPropertyList());
                 entity = populateDynamicLabels(node, nodeId, entity);
+
                 mappingContext.addNodeEntity(entity, nodeId);
             }
-            nodeIds.add(nodeId);
+            visitedNodes.add(nodeId);
         }
     }
 
