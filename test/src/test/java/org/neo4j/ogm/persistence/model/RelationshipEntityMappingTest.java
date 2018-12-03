@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.ogm.domain.canonical.hierarchies.A;
 import org.neo4j.ogm.domain.canonical.hierarchies.B;
@@ -130,6 +131,7 @@ public class RelationshipEntityMappingTest extends MultiDriverTestClass {
     }
 
     @Test // See #265
+    @Ignore
     public void testThingsWork() {
         Something something = new Something("A thing");
         ConnectionBetweenThings connection = new ConnectionBetweenThings("A connection", something, new Something("target"));
