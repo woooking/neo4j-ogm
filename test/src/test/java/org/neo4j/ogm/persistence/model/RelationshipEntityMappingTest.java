@@ -13,6 +13,7 @@
 
 package org.neo4j.ogm.persistence.model;
 
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
@@ -30,6 +31,8 @@ import org.neo4j.ogm.domain.canonical.hierarchies.CR;
 import org.neo4j.ogm.domain.cineasts.annotated.Actor;
 import org.neo4j.ogm.domain.cineasts.annotated.Movie;
 import org.neo4j.ogm.domain.cineasts.annotated.Role;
+import org.neo4j.ogm.domain.relationships.ConnectionBetweenThings;
+import org.neo4j.ogm.domain.relationships.Something;
 import org.neo4j.ogm.model.Result;
 import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;
@@ -39,6 +42,7 @@ import org.neo4j.ogm.testutil.MultiDriverTestClass;
 /**
  * @author Vince Bickers
  * @author Mark Angrish
+ * @author Michael J. Simons
  */
 public class RelationshipEntityMappingTest extends MultiDriverTestClass {
 
@@ -46,8 +50,11 @@ public class RelationshipEntityMappingTest extends MultiDriverTestClass {
 
     @BeforeClass
     public static void oneTimeSetUp() {
-        sessionFactory = new SessionFactory(driver, "org.neo4j.ogm.domain.cineasts.annotated",
-            "org.neo4j.ogm.domain.canonical.hierarchies");
+        sessionFactory = new SessionFactory(driver,
+            "org.neo4j.ogm.domain.cineasts.annotated",
+            "org.neo4j.ogm.domain.canonical.hierarchies",
+            "org.neo4j.ogm.domain.relationships"
+        );
     }
 
     @Before
@@ -120,5 +127,27 @@ public class RelationshipEntityMappingTest extends MultiDriverTestClass {
 
         Map<String, Object> first = iterator.next();
         assertSame(role, first.get("rel"));
+    }
+
+    @Test // See #265
+    public void testThingsWork() {
+        Something something = new Something("A thing");
+        ConnectionBetweenThings connection = new ConnectionBetweenThings("A connection", something, new Something("target"));
+        something.setConnectionBetweenThings(connection);
+
+
+        session.save(something);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("id", something.getId());
+        Result result = session.query("MATCH (s:Something)-[r:CONNECTION]-(s2:Something) WHERE ID(s) = {id} RETURN s2.name as name",
+            params);
+
+        Iterator<Map<String, Object>> iterator = result.iterator();
+        assertThat(iterator.hasNext(), is(true));
+        assertThat(iterator.next().get("name"), is(equalTo("target")));
+
+
+
     }
 }
