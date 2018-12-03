@@ -236,6 +236,21 @@ public class FieldInfo {
         throw new RuntimeException("relationship direction call invalid");
     }
 
+    boolean relationshipDirectionMatches(String requestedDirection) {
+        String directionOfField = relationshipDirection(Relationship.OUTGOING);
+
+        boolean directionOfFieldIsIncomingOrUndirected =
+            directionOfField.equals(Relationship.INCOMING) || directionOfField.equals(Relationship.UNDIRECTED);
+
+        boolean matchesIncomingOrUndirected =
+            requestedDirection.equals(Relationship.INCOMING) && directionOfFieldIsIncomingOrUndirected;
+
+        boolean matchesOutgoing =
+            requestedDirection.equals(Relationship.OUTGOING) && !directionOfField.equals(Relationship.INCOMING);
+
+        return matchesIncomingOrUndirected || matchesOutgoing;
+    }
+
     public boolean isIterable() {
         return Iterable.class.isAssignableFrom(fieldType);
     }

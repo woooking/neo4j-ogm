@@ -513,11 +513,7 @@ public class ClassInfo {
         for (FieldInfo fieldInfo : relationshipFields()) {
             String relationship = strict ? fieldInfo.relationshipTypeAnnotation() : fieldInfo.relationshipType();
             if (relationshipType.equalsIgnoreCase(relationship)) {
-                if (((fieldInfo.relationshipDirection(Relationship.OUTGOING).equals(Relationship.INCOMING) || fieldInfo
-                    .relationshipDirection(Relationship.OUTGOING).equals(Relationship.UNDIRECTED))
-                    && (relationshipDirection.equals(Relationship.INCOMING)))
-                    || (relationshipDirection.equals(Relationship.OUTGOING) && !(fieldInfo
-                    .relationshipDirection(Relationship.OUTGOING).equals(Relationship.INCOMING)))) {
+                if (fieldInfo.relationshipDirectionMatches(relationshipDirection)) {
                     return fieldInfo;
                 }
             }
@@ -539,11 +535,7 @@ public class ClassInfo {
         for (FieldInfo fieldInfo : relationshipFields()) {
             String relationship = strict ? fieldInfo.relationshipTypeAnnotation() : fieldInfo.relationshipType();
             if (relationshipType.equalsIgnoreCase(relationship)) {
-                if (((fieldInfo.relationshipDirection(Relationship.OUTGOING).equals(Relationship.INCOMING) || fieldInfo
-                    .relationshipDirection(Relationship.OUTGOING).equals(Relationship.UNDIRECTED))
-                    && (relationshipDirection.equals(Relationship.INCOMING)))
-                    || (relationshipDirection.equals(Relationship.OUTGOING) && !(fieldInfo
-                    .relationshipDirection(Relationship.OUTGOING).equals(Relationship.INCOMING)))) {
+                if (fieldInfo.relationshipDirectionMatches(relationshipDirection)) {
                     candidateFields.add(fieldInfo);
                 }
             }
@@ -699,11 +691,7 @@ public class ClassInfo {
         for (FieldInfo fieldInfo : findIterableFields(iteratedType)) {
             String relationship = strict ? fieldInfo.relationshipTypeAnnotation() : fieldInfo.relationshipType();
             if (relationshipType.equals(relationship)) {
-                if (((fieldInfo.relationshipDirection(Relationship.OUTGOING).equals(Relationship.INCOMING) || fieldInfo
-                    .relationshipDirection(Relationship.OUTGOING).equals(Relationship.UNDIRECTED))
-                    && relationshipDirection.equals(Relationship.INCOMING))
-                    || (relationshipDirection.equals(Relationship.OUTGOING) && !(fieldInfo
-                    .relationshipDirection(Relationship.OUTGOING).equals(Relationship.INCOMING)))) {
+                if (fieldInfo.relationshipDirectionMatches(relationshipDirection)) {
                     fieldInfos.add(fieldInfo);
                 }
             }
