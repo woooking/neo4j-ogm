@@ -167,7 +167,7 @@ public class ClassInfoTest {
         Collection<FieldInfo> fieldInfos = classInfo.propertyFields();
 
         FieldInfo fieldInfo = fieldInfos.iterator().next();
-        assertThat(fieldInfo.relationship()).isNull();
+        assertThat(fieldInfo.relationshipType()).isNull();
     }
 
     /**
@@ -203,7 +203,7 @@ public class ClassInfoTest {
 
         for (FieldInfo fieldInfo : fieldInfos) {
             if (fieldInfo.getName().equals("posts"))
-                assertThat(fieldInfo.relationship()).isEqualTo("HAS_POSTS");
+                assertThat(fieldInfo.relationshipType()).isEqualTo("HAS_POSTS");
         }
     }
 
@@ -217,7 +217,7 @@ public class ClassInfoTest {
 
         for (FieldInfo fieldInfo : fieldInfos) {
             if (fieldInfo.getName().equals("posts"))
-                assertThat(fieldInfo.relationship()).isEqualTo("HAS_POSTS");
+                assertThat(fieldInfo.relationshipType()).isEqualTo("HAS_POSTS");
         }
     }
 

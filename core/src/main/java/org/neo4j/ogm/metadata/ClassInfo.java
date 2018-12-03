@@ -489,12 +489,12 @@ public class ClassInfo {
     /**
      * Finds the relationship field with a specific name from the ClassInfo's relationship fields
      *
-     * @param relationshipName the relationshipName of the field to find
+     * @param relationshipType the type of the field's relationship
      * @return A FieldInfo object describing the required relationship field, or null if it doesn't exist.
      */
-    public FieldInfo relationshipField(String relationshipName) {
+    public FieldInfo relationshipField(String relationshipType) {
         for (FieldInfo fieldInfo : relationshipFields()) {
-            if (fieldInfo.relationship().equalsIgnoreCase(relationshipName)) {
+            if (fieldInfo.relationshipType().equalsIgnoreCase(relationshipType)) {
                 return fieldInfo;
             }
         }
@@ -504,15 +504,15 @@ public class ClassInfo {
     /**
      * Finds the relationship field with a specific name and direction from the ClassInfo's relationship fields
      *
-     * @param relationshipName      the relationshipName of the field to find
+     * @param relationshipType      the field's relationship type
      * @param relationshipDirection the direction of the relationship
      * @param strict                if true, does not infer relationship type but looks for it in the @Relationship annotation. Null if missing. If false, infers relationship type from FieldInfo
      * @return A FieldInfo object describing the required relationship field, or null if it doesn't exist.
      */
-    public FieldInfo relationshipField(String relationshipName, String relationshipDirection, boolean strict) {
+    public FieldInfo relationshipField(String relationshipType, String relationshipDirection, boolean strict) {
         for (FieldInfo fieldInfo : relationshipFields()) {
-            String relationship = strict ? fieldInfo.relationshipTypeAnnotation() : fieldInfo.relationship();
-            if (relationshipName.equalsIgnoreCase(relationship)) {
+            String relationship = strict ? fieldInfo.relationshipTypeAnnotation() : fieldInfo.relationshipType();
+            if (relationshipType.equalsIgnoreCase(relationship)) {
                 if (((fieldInfo.relationshipDirection(Relationship.OUTGOING).equals(Relationship.INCOMING) || fieldInfo
                     .relationshipDirection(Relationship.OUTGOING).equals(Relationship.UNDIRECTED))
                     && (relationshipDirection.equals(Relationship.INCOMING)))
@@ -528,17 +528,17 @@ public class ClassInfo {
     /**
      * Finds all relationship fields with a specific name and direction from the ClassInfo's relationship fields
      *
-     * @param relationshipName      the relationshipName of the field to find
+     * @param relationshipType      the field's relationship type
      * @param relationshipDirection the direction of the relationship
      * @param strict                if true, does not infer relationship type but looks for it in the @Relationship annotation. Null if missing. If false, infers relationship type from FieldInfo
      * @return Set of  FieldInfo objects describing the required relationship field, or empty set if it doesn't exist.
      */
-    public Set<FieldInfo> candidateRelationshipFields(String relationshipName, String relationshipDirection,
+    public Set<FieldInfo> candidateRelationshipFields(String relationshipType, String relationshipDirection,
         boolean strict) {
         Set<FieldInfo> candidateFields = new HashSet<>();
         for (FieldInfo fieldInfo : relationshipFields()) {
-            String relationship = strict ? fieldInfo.relationshipTypeAnnotation() : fieldInfo.relationship();
-            if (relationshipName.equalsIgnoreCase(relationship)) {
+            String relationship = strict ? fieldInfo.relationshipTypeAnnotation() : fieldInfo.relationshipType();
+            if (relationshipType.equalsIgnoreCase(relationship)) {
                 if (((fieldInfo.relationshipDirection(Relationship.OUTGOING).equals(Relationship.INCOMING) || fieldInfo
                     .relationshipDirection(Relationship.OUTGOING).equals(Relationship.UNDIRECTED))
                     && (relationshipDirection.equals(Relationship.INCOMING)))
@@ -697,7 +697,7 @@ public class ClassInfo {
         boolean strict) {
         List<FieldInfo> fieldInfos = new ArrayList<>();
         for (FieldInfo fieldInfo : findIterableFields(iteratedType)) {
-            String relationship = strict ? fieldInfo.relationshipTypeAnnotation() : fieldInfo.relationship();
+            String relationship = strict ? fieldInfo.relationshipTypeAnnotation() : fieldInfo.relationshipType();
             if (relationshipType.equals(relationship)) {
                 if (((fieldInfo.relationshipDirection(Relationship.OUTGOING).equals(Relationship.INCOMING) || fieldInfo
                     .relationshipDirection(Relationship.OUTGOING).equals(Relationship.UNDIRECTED))

@@ -39,7 +39,7 @@ public class RelationshipWriterPlainFieldsTest {
             .getRelationalWriter(classInfo, "LIST", Relationship.OUTGOING, new T());
         assertThat(objectAccess).as("The resultant object accessor shouldn't be null").isNotNull();
         assertThat(objectAccess instanceof FieldInfo).as("The access mechanism should be via the field").isTrue();
-        assertThat(objectAccess.relationshipName()).isEqualTo("LIST");
+        assertThat(objectAccess.relationshipType()).isEqualTo("LIST");
     }
 
     @Test
@@ -51,7 +51,7 @@ public class RelationshipWriterPlainFieldsTest {
             .getRelationalWriter(classInfo, "SCALAR", Relationship.OUTGOING, new T());
         assertThat(objectAccess).as("The resultant object accessor shouldn't be null").isNotNull();
         assertThat(objectAccess instanceof FieldInfo).as("The access mechanism should be via the field").isTrue();
-        assertThat(objectAccess.relationshipName()).isEqualTo("SCALAR");
+        assertThat(objectAccess.relationshipType()).isEqualTo("SCALAR");
     }
 
     @Test
@@ -63,7 +63,7 @@ public class RelationshipWriterPlainFieldsTest {
             .getRelationalWriter(classInfo, "ARRAY", Relationship.OUTGOING, new T());
         assertThat(objectAccess).as("The resultant object accessor shouldn't be null").isNotNull();
         assertThat(objectAccess instanceof FieldInfo).as("The access mechanism should be via the field").isTrue();
-        assertThat(objectAccess.relationshipName()).isEqualTo("ARRAY");
+        assertThat(objectAccess.relationshipType()).isEqualTo("ARRAY");
     }
 
     static class S {

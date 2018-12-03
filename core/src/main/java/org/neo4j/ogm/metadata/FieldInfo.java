@@ -155,7 +155,7 @@ public class FieldInfo {
         return null;
     }
 
-    public String relationship() {
+    public String relationshipType() {
         if (!persistableAsProperty()) {
             if (annotations != null) {
                 AnnotationInfo relationshipAnnotation = annotations.get(Relationship.class);
@@ -226,7 +226,7 @@ public class FieldInfo {
     }
 
     public String relationshipDirection(String defaultDirection) {
-        if (relationship() != null) {
+        if (relationshipType() != null) {
             AnnotationInfo annotationInfo = getAnnotations().get(Relationship.class);
             if (annotationInfo == null) {
                 return defaultDirection;
@@ -401,10 +401,6 @@ public class FieldInfo {
         return fieldType;
     }
 
-    public String relationshipName() {
-        return this.relationship();
-    }
-
     public boolean forScalar() {
         return !Iterable.class.isAssignableFrom(type()) && !type().isArray();
     }
@@ -436,10 +432,6 @@ public class FieldInfo {
         }
         Object value = read(containingClassInfo.getField(this), instance);
         return getCompositeConverter().toGraphProperties(value);
-    }
-
-    public String relationshipType() {
-        return relationship();
     }
 
     public String propertyName() {
