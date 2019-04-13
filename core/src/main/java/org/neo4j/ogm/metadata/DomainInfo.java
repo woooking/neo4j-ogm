@@ -18,28 +18,22 @@
  */
 package org.neo4j.ogm.metadata;
 
-import static java.util.Comparator.*;
-
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 import io.github.lukehutch.fastclasspathscanner.scanner.ScanResult;
+import org.neo4j.ogm.annotation.typeconversion.Convert;
+import org.neo4j.ogm.driver.TypeSystem;
+import org.neo4j.ogm.driver.TypeSystem.NoNativeTypes;
+import org.neo4j.ogm.exception.core.MappingException;
+import org.neo4j.ogm.typeconversion.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.neo4j.ogm.annotation.typeconversion.Convert;
-import org.neo4j.ogm.driver.TypeSystem;
-import org.neo4j.ogm.driver.TypeSystem.NoNativeTypes;
-import org.neo4j.ogm.exception.core.MappingException;
-import org.neo4j.ogm.typeconversion.AttributeConverter;
-import org.neo4j.ogm.typeconversion.AttributeConverters;
-import org.neo4j.ogm.typeconversion.ConversionCallback;
-import org.neo4j.ogm.typeconversion.ConversionCallbackRegistry;
-import org.neo4j.ogm.typeconversion.ConvertibleTypes;
-import org.neo4j.ogm.typeconversion.ProxyAttributeConverter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.util.Comparator.comparingInt;
 
 /**
  * @author Vince Bickers
@@ -143,7 +137,7 @@ public class DomainInfo {
         Class<?> loadedButNotInitalizedClass = null;
         try {
             loadedButNotInitalizedClass = Class
-                .forName(className, false, Thread.currentThread().getContextClassLoader());
+                .forName(className, false, DomainInfo.class.getClassLoader());
         } catch (ClassNotFoundException e) {
             LOGGER.warn("Could not load class {}", className);
 

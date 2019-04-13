@@ -18,13 +18,14 @@
  */
 package org.neo4j.ogm.metadata;
 
-import static java.util.stream.Collectors.*;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * Utility class helping with descriptor to type mappings, especially providing maps of primitives and their
@@ -105,7 +106,7 @@ public final class DescriptorMappings {
             return Object.class;
         }
 
-        return Class.forName(rawDescriptor, false, Thread.currentThread().getContextClassLoader());
+        return Class.forName(rawDescriptor, false, DescriptorMappings.class.getClassLoader());
     }
 
     private static String stripArraySuffix(String descriptor) {

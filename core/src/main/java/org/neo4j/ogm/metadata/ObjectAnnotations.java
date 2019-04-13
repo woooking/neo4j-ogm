@@ -18,7 +18,9 @@
  */
 package org.neo4j.ogm.metadata;
 
-import static java.util.stream.Collectors.*;
+import org.neo4j.ogm.annotation.typeconversion.*;
+import org.neo4j.ogm.support.ClassUtils;
+import org.neo4j.ogm.typeconversion.*;
 
 import java.lang.annotation.Annotation;
 import java.time.Instant;
@@ -26,17 +28,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.neo4j.ogm.annotation.typeconversion.Convert;
-import org.neo4j.ogm.annotation.typeconversion.DateLong;
-import org.neo4j.ogm.annotation.typeconversion.DateString;
-import org.neo4j.ogm.annotation.typeconversion.EnumString;
-import org.neo4j.ogm.annotation.typeconversion.NumberString;
-import org.neo4j.ogm.support.ClassUtils;
-import org.neo4j.ogm.typeconversion.DateLongConverter;
-import org.neo4j.ogm.typeconversion.DateStringConverter;
-import org.neo4j.ogm.typeconversion.EnumStringConverter;
-import org.neo4j.ogm.typeconversion.InstantLongConverter;
-import org.neo4j.ogm.typeconversion.NumberStringConverter;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * @author Vince Bickers
@@ -82,7 +74,7 @@ public class ObjectAnnotations {
             }
 
             try {
-                Class<?> clazz = Class.forName(classDescriptor, false, ClassUtils.getDefaultClassLoader());
+                Class<?> clazz = Class.forName(classDescriptor, false, this.getClass().getClassLoader());
                 return clazz.newInstance();
             } catch (Exception e) {
                 throw new RuntimeException(e);
